@@ -1,0 +1,147 @@
+# ============================================================
+#  Nobel Clinic — .htaccess (Apache)
+#  Drop this file in /public_html alongside index.html
+# ============================================================
+
+# ---------- 1. Force HTTPS ----------
+# Redirect all http:// traffic to https:// (required for HTTP/2 + SEO)
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ---------- 2. Force www → non-www (or vice versa, pick one) ----------
+# Your canonical is https://www.nobelclinic.ir/ — keep www version.
+# If you'd rather use bare nobelclinic.ir, swap the rule below.
+RewriteCond %{HTTP_HOST} ^nobelclinic\.ir$ [NC]
+RewriteRule ^(.*)$ https://www.nobelclinic.ir/$1 [L,R=301]
+
+# ---------- 3. Brotli compression (preferred, if mod_brotli installed) ----------
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS \
+    text/html text/plain text/css text/javascript \
+    application/javascript application/json application/xml \
+    image/svg+xml application/x-font-ttf font/ttf font/otf \
+    application/wasm
+</IfModule>
+
+# ---------- 4. Gzip compression (fallback — always works on Apache) ----------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE \
+    text/html text/plain text/css text/javascript \
+    application/javascript application/json application/xml \
+    image/svg+xml application/x-font-ttf font/ttf font/otf \
+    application/wasm
+</IfModule>
+
+# ---------- 5. Cache headers ----------
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # HTML — short cache (5 min) so updates show fast
+  ExpiresByType text/html "access plus 5 minutes"
+  ExpiresByType text/xml "access plus 5 minutes"
+
+  # Images — 1 year (immutable)
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/avif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType image/vnd.microsoft.icon "access plus 1 year"
+
+  # Fonts — 1 year
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType application/font-woff "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+  # CSS / JS — 1 year
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+
+  # Default for anything else
+  ExpiresDefault "access plus 1 month"
+</IfModule>
+
+# ---------- 6. Cache-Control headers (modern, complements mod_expires) ----------
+<IfModule mod_headers.c>
+  # Long-cache static assets with immutable flag
+  <FilesMatch "\.(css|js|woff2|woff|ttf|eot|otf|jpg|jpeg|png|gif|webp|avif|svg|ico|pdf)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # HTML — must revalidate
+  <FilesMatch "\.(html|htm|xml|txt)$">
+    Header set Cache-Control "public, max-age=300, must-revalidate"
+  </FilesMatch>
+
+  # ---------- 7. Security headers ----------
+  # Force HTTPS in browsers for 1 year (HSTS)
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+  # Don't sniff MIME type
+  Header set X-Content-Type-Options "nosniff"
+  # Referrer info only for same origin
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  # Clickjacking protection
+  Header set X-Frame-Options "SAMEORIGIN"
+  # Permissions policy (disable camera, mic, geolocation unless needed)
+  Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  # Content Security Policy — permissive for Google Fonts, Unsplash, Google Maps, WhatsApp, Instagram
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com https://maps.gstatic.com https://maps.googleapis.com; frame-src https://www.google.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+
+  # ---------- 8. CORS for fonts (in case self-hosting later) ----------
+  <FilesMatch "\.(woff2|woff|ttf|otf|eot)$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>
+
+# ---------- 9. Modern image MIME types ----------
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/avif .avif
+  AddType image/svg+xml .svg
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# ---------- 10. Default character encoding ----------
+AddDefaultCharset UTF-8
+
+# ---------- 11. Disable directory browsing ----------
+Options -Indexes
+
+# ---------- 12. Block hidden files (e.g. .git, .env) ----------
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# ---------- 13. Block sensitive file types ----------
+<FilesMatch "\.(sql|bak|log|ini|sh|swp|md|yml|yaml|json|lock)$">
+  Require all denied
+</FilesMatch>
+
+# ---------- 14. Custom error pages (optional — uncomment if you create these) ----------
+# ErrorDocument 404 /404.html
+# ErrorDocument 403 /403.html
+# ErrorDocument 500 /500.html
+
+# ---------- 15. UTF-8 for Persian text files (if any .txt served) ----------
+<IfModule mod_headers.c>
+  <FilesMatch "\.(txt|csv|json)$">
+    Header set Content-Type "text/plain; charset=UTF-8"
+  </FilesMatch>
+</IfModule>
+
+# ---------- 16. Remove trailing slashes (avoid duplicate URLs) ----------
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)/$ /$1 [L,R=301]
+
+# ---------- 17. Block user agents scanning for vulnerabilities ----------
+<IfModule mod_rewrite.c>
+  RewriteCond %{HTTP_USER_AGENT} (^$|bot|crawl|spider|scanner|nikto|sqlmap|wpscan|masscan|nmap) [NC]
+  RewriteRule \.(sql|bak|zip|tar|gz|rar|7z|log)$ - [F,L]
+</IfModule>

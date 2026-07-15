@@ -1,0 +1,32 @@
+# robots.txt — Nobel Beauty Clinic
+# https://www.nobelclinic.ir/
+
+# Allow all crawlers to access all content
+User-agent: *
+Allow: /
+
+# Block crawling of hidden files and folders
+Disallow: /*.git$
+Disallow: /*.git/
+Disallow: /*.svn$
+Disallow: /*.svn/
+Disallow: /*.env$
+Disallow: /*.log$
+Disallow: /*.sql$
+Disallow: /*.bak$
+Disallow: /*.zip$
+Disallow: /*.tar$
+Disallow: /*.gz$
+Disallow: /*.rar$
+Disallow: /*.7z$
+
+# Block common sensitive paths (don't exist on a static site, but defensive)
+Disallow: /cgi-bin/
+Disallow: /tmp/
+Disallow: /admin/
+Disallow: /config/
+Disallow: /private/
+Disallow: /backup/
+
+# Sitemap location (absolute URL)
+Sitemap: https://www.nobelclinic.ir/sitemap.xml
